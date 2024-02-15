@@ -79,18 +79,27 @@ defmodule ContentfulElixir do
   - The API access token must have the required permissions to access entries within the specified space and content type.
 
   """
-  @spec fetch_entries(String.t(), String.t()) :: {:ok, map()}
+  @spec fetch_entries(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_entries(content_type, locale \\ "en-US") do
-    %Req.Response{status: 200, body: %{"items" => entries}} =
-      Req.get!("#{@base_url}/spaces/#{@space_id}/entries",
-        params: [
-          access_token: @access_token,
-          content_type: content_type,
-          locale: locale
-        ]
-      )
+    case Req.get("#{@base_url}/spaces/#{@space_id}/entries",
+           params: [
+             access_token: @access_token,
+             content_type: content_type,
+             locale: locale
+           ]
+         ) do
+      {:ok, %Req.Response{status: 200, body: %{"items" => entries}}} ->
+        {:ok, entries}
 
-    {:ok, entries}
+      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
+        {:error, {:client_error, status, body}}
+
+      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
+        {:error, {:server_error, status, body}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -125,17 +134,26 @@ defmodule ContentfulElixir do
   - Ensure that the API access token has sufficient permissions to read entries in the specified space.
 
   """
-  @spec fetch_entry(String.t(), String.t()) :: {:ok, map()}
+  @spec fetch_entry(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_entry(entry_id, locale \\ "en-US") do
-    %Req.Response{status: 200, body: entry} =
-      Req.get!("#{@base_url}/spaces/#{@space_id}/entries/#{entry_id}",
-        params: [
-          access_token: @access_token,
-          locale: locale
-        ]
-      )
+    case Req.get("#{@base_url}/spaces/#{@space_id}/entries/#{entry_id}",
+           params: [
+             access_token: @access_token,
+             locale: locale
+           ]
+         ) do
+      {:ok, %Req.Response{status: 200, body: entry}} ->
+        {:ok, entry}
 
-    {:ok, entry}
+      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
+        {:error, {:client_error, status, body}}
+
+      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
+        {:error, {:server_error, status, body}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   @doc """
@@ -170,16 +188,25 @@ defmodule ContentfulElixir do
   - The API access token must have the required permissions to access assets within the specified space.
 
   """
-  @spec fetch_asset(String.t(), String.t()) :: {:ok, map()}
+  @spec fetch_asset(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_asset(asset_id, locale \\ "en-US") do
-    %Req.Response{status: 200, body: asset} =
-      Req.get!("#{@base_url}/spaces/#{@space_id}/assets/#{asset_id}",
-        params: [
-          access_token: @access_token,
-          locale: locale
-        ]
-      )
+    case Req.get("#{@base_url}/spaces/#{@space_id}/assets/#{asset_id}",
+           params: [
+             access_token: @access_token,
+             locale: locale
+           ]
+         ) do
+      {:ok, %Req.Response{status: 200, body: asset}} ->
+        {:ok, asset}
 
-    {:ok, asset}
+      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
+        {:error, {:client_error, status, body}}
+
+      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
+        {:error, {:server_error, status, body}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end

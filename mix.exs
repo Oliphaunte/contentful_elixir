@@ -26,8 +26,7 @@ defmodule ContentfulElixir.MixProject do
     %{
       files: ~w(lib .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/Oliphaunte/contentful_elixir"},
-      organization: "kredentials"
+      links: %{"GitHub" => "https://github.com/Oliphaunte/contentful_elixir"}
     }
   end
 
