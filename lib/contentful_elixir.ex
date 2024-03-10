@@ -43,9 +43,13 @@ defmodule ContentfulElixir do
   Ensure that error handling is implemented in the calling code to gracefully handle potential exceptions raised by these functions.
   """
 
-  @base_url Application.compile_env(:contentful_elixir, :base_url, "https://cdn.contentful.com")
-  @space_id Application.compile_env(:contentful_elixir, :space_id)
-  @access_token Application.compile_env(:contentful_elixir, :access_token)
+  def config do
+    %{
+      base_url: Application.get_env(:contentful_elixir, :base_url, "https://cdn.contentful.com"),
+      space_id: Application.fetch_env!(:contentful_elixir, :space_id),
+      access_token: Application.fetch_env!(:contentful_elixir, :access_token)
+    }
+  end
 
   @doc """
   Fetches a list of entries of a specific content type from Contentful for a given locale.
@@ -81,25 +85,7 @@ defmodule ContentfulElixir do
   """
   @spec fetch_entries(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_entries(content_type, locale \\ "en-US") do
-    case Req.get("#{@base_url}/spaces/#{@space_id}/entries",
-           params: [
-             access_token: @access_token,
-             content_type: content_type,
-             locale: locale
-           ]
-         ) do
-      {:ok, %Req.Response{status: 200, body: %{"items" => entries}}} ->
-        {:ok, entries}
-
-      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
-        {:error, {:client_error, status, body}}
-
-      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
-        {:error, {:server_error, status, body}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    get_contentful_resource("entries", params: [content_type: content_type, locale: locale])
   end
 
   @doc """
@@ -136,24 +122,7 @@ defmodule ContentfulElixir do
   """
   @spec fetch_entry(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_entry(entry_id, locale \\ "en-US") do
-    case Req.get("#{@base_url}/spaces/#{@space_id}/entries/#{entry_id}",
-           params: [
-             access_token: @access_token,
-             locale: locale
-           ]
-         ) do
-      {:ok, %Req.Response{status: 200, body: entry}} ->
-        {:ok, entry}
-
-      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
-        {:error, {:client_error, status, body}}
-
-      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
-        {:error, {:server_error, status, body}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    get_contentful_resource("entries/#{entry_id}", params: [locale: locale])
   end
 
   @doc """
@@ -190,23 +159,23 @@ defmodule ContentfulElixir do
   """
   @spec fetch_asset(String.t(), String.t()) :: {:ok, map()} | {:error, term()}
   def fetch_asset(asset_id, locale \\ "en-US") do
-    case Req.get("#{@base_url}/spaces/#{@space_id}/assets/#{asset_id}",
-           params: [
-             access_token: @access_token,
-             locale: locale
-           ]
-         ) do
-      {:ok, %Req.Response{status: 200, body: asset}} ->
-        {:ok, asset}
+    get_contentful_resource("assets/#{asset_id}", params: [locale: locale])
+  end
 
-      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
-        {:error, {:client_error, status, body}}
+  defp get_contentful_resource(path, options) do
+    case Req.get(url(path), Keyword.put(options, :access_token, config().access_token)) do
+      {:ok, %Req.Response{status: 200, body: body}} ->
+        {:ok, body}
 
-      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
-        {:error, {:server_error, status, body}}
+      {:ok, %Req.Response{status: status, body: body}} when status in 400..599 ->
+        {:error, {:http_error, status, body}}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp url(path) do
+    "#{config().base_url}/spaces/#{config().space_id}/#{path}"
   end
 end
