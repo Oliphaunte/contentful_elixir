@@ -164,7 +164,6 @@ defmodule ContentfulElixir do
 
   defp get_contentful_resource(path, options) do
     params = Keyword.merge(options[:params], access_token: config().access_token)
-    IO.inspect(params)
 
     case Req.get(url(path), params: params) do
       {:ok, %Req.Response{status: 200, body: body}} ->
